@@ -1,0 +1,320 @@
+---
+title: "1pair_deSeq2"
+output: html_document
+date: "2025-01-25"
+---
+
+## load library
+```{r load_library, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(RColorBrewer)
+library(pheatmap)
+library(readr)
+library(DESeq2)
+library(rmarkdown)
+library(regionReport)
+library(ggplot2)
+library(pheatmap)
+```
+
+## Construct DESeqDataSet object
+```{r createDDS13pairs_object, echo=TRUE}
+# count matrix
+pairs13_df <- read.csv("/Users/yongxin/Documents/Research/HPC/deSeq2/PythonWorkstation/countData_13pairs.csv", row.names = "transcript")
+pairs13_df_cts <- as.matrix(pairs13_df) 
+
+# sample information
+coldata <- data.frame(sampleType = c('Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor',
+                                    'Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 
+                                    'Normal', 'Normal', 'Normal', 'Normal', 'Normal',
+                                    'Normal', 'Normal', 'Normal', 'Normal', 'Normal',
+                                    'Normal', 'Normal', 'Normal'),
+                      patientGroup = c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', 
+                                       '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'))
+rownames(coldata) <- c('tumor_00cf_1', 'tumor_b9d0_2', 'tumor_0166_3', 'tumor_cf39_4', 'tumor_1421_5', 'tumor_4225_6', 'tumor_6c97_7', 'tumor_40ac_8', 
+                       'tumor_43e6_9', 'tumor_5acb_10', 'tumor_6259_11', 'tumor_bdb3_12', 'tumor_2f8e_13', 'normal_b855_1', 'normal_8ec0_2', 
+                       'normal_ba94_3', 'normal_9281_4', 'normal_9cb3_5', 'normal_7a90_6', 'normal_e84e_7', 'normal_a3ba_8', 'normal_3562_9',
+                       'normal_caf4_10', 'normal_63d3_11', 'normal_6d67_12', 'normal_62b6_13')
+coldata$sampleType <- factor(coldata$sampleType)
+coldata$patientGroup <- factor(coldata$patientGroup)
+
+# construct a DESeqDataSet with the count matrix and the sample information
+dds <- DESeqDataSetFromMatrix(countData = pairs13_df_cts,
+                              colData = coldata,
+                              design = ~ sampleType)
+print(dds)
+all(colnames(pairs13_df_cts) == rownames(coldata))
+```
+
+```{r createDDS_ESCCobject, echo=FALSE, warning=FALSE}
+pairsESCC_df <- read.csv("/Users/yongxin/Documents/Research/HPC/deSeq2/PythonWorkstation/countData_ESCC_3pairs.csv", row.names = "transcript")
+pairsESCC_df_cts <- as.matrix(pairsESCC_df) 
+
+# sample information
+coldataESCC <- data.frame(sampleType = c('Tumor', 'Tumor', 'Tumor', 
+                                    'Normal', 'Normal', 'Normal'),
+                      patientGroup = c('1', '4', '8', 
+                                       '1', '4', '8'))
+rownames(coldataESCC) <- c('tumor_00cf_1', 'tumor_cf39_4', 'tumor_40ac_8', 
+                       'normal_b855_1', 'normal_9281_4', 'normal_a3ba_8')
+coldataESCC$sampleType <- factor(coldataESCC$sampleType)
+coldataESCC$patientGroup <- factor(coldataESCC$patientGroup)
+
+# construct a DESeqDataSet with the count matrix and the sample information
+ddsESCC <- DESeqDataSetFromMatrix(countData = pairsESCC_df_cts,
+                              colData = coldataESCC,
+                              design = ~ sampleType)
+print(ddsESCC)
+all(colnames(pairsESCC_df_cts) == rownames(coldataESCC))
+
+# DESeq2
+ddsESCC <- DESeq(ddsESCC)
+
+# get result table
+levels(ddsESCC$sampleType) # check the reference level -- first argument 
+contrast_sampleType <- c("sampleType","Tumor","Normal")
+res_ESCC_unshrunken <- results(ddsESCC, contrast = contrast_sampleType) # prior estimate of LFC
+
+sizeFactorESCC <- sizeFactors(ddsESCC)
+sizeFactorESCC
+
+# shrink
+resultsNames(ddsESCC)
+res_ESCC <- lfcShrink(ddsESCC, res = res_ESCC_unshrunken, coef = "sampleType_Tumor_vs_Normal", type="apeglm")
+summary(res_ESCC)
+
+# filter (p-adj < 0.05 & logfoldchange > 0.58)
+# res_sampleType_filtered <- subset(res_sampleType, padj < 0.05 & ( log2FoldChange > 0.58 | log2FoldChange < -0.58))
+# res_tissueOrigin_ordered <- res_tissueOrigin_filtered[order(res_tissueOrigin_filtered$log2FoldChange),]
+# summary(res_tissueOrigin_ordered)
+```
+
+```{r createDDS_EACobject, echo=FALSE, warning=FALSE}
+pairsEAC_df <- read.csv("/Users/yongxin/Documents/Research/HPC/deSeq2/PythonWorkstation/countData_EAC_10pairs.csv", row.names = "transcript")
+pairsEAC_df_cts <- as.matrix(pairsEAC_df) 
+
+# sample information
+coldataEAC <- data.frame(sampleType = c('Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 
+                                    'Tumor', 'Tumor', 'Tumor', 'Tumor', 'Tumor', 
+                                    'Normal', 'Normal', 'Normal', 'Normal', 'Normal',
+                                    'Normal', 'Normal', 'Normal', 'Normal', 'Normal'),
+                      patientGroup = c('2', '3', '5', '6', '7', '9', '10', '11', '12', '13', 
+                                       '2', '3', '5', '6', '7', '9', '10', '11', '12', '13'))
+rownames(coldataEAC) <- c('tumor_b9d0_2', 'tumor_0166_3', 'tumor_1421_5', 'tumor_4225_6', 'tumor_6c97_7', 
+                       'tumor_43e6_9', 'tumor_5acb_10', 'tumor_6259_11', 'tumor_bdb3_12', 'tumor_2f8e_13',
+                       'normal_8ec0_2', 'normal_ba94_3', 'normal_9cb3_5', 'normal_7a90_6', 'normal_e84e_7',
+                       'normal_3562_9','normal_caf4_10', 'normal_63d3_11', 'normal_6d67_12', 'normal_62b6_13')
+coldataEAC$sampleType <- factor(coldataEAC$sampleType)
+coldataEAC$patientGroup <- factor(coldataEAC$patientGroup)
+
+# construct a DESeqDataSet with the count matrix and the sample information
+ddsEAC <- DESeqDataSetFromMatrix(countData = pairsEAC_df_cts,
+                              colData = coldataEAC,
+                              design = ~ sampleType)
+print(ddsEAC)
+all(colnames(pairsEAC_df_cts) == rownames(coldataEAC))
+
+# DESeq2
+ddsEAC <- DESeq(ddsEAC)
+
+# get result table
+levels(ddsEAC$sampleType) # check the reference level -- first argument 
+contrast_EAC <- c("sampleType","Tumor","Normal")
+res_EAC_unshrunken <- results(ddsEAC, contrast = contrast_EAC) # prior estimate of LFC
+
+sizeFactorEAC <- sizeFactors(ddsEAC)
+sizeFactorEAC
+
+# shrink
+resultsNames(ddsEAC)
+res_EAC <- lfcShrink(ddsEAC, res = res_EAC_unshrunken, coef = "sampleType_Tumor_vs_Normal", type="apeglm")
+summary(res_EAC)
+```
+
+
+## RNA-counts distribution
+```{r count_dist, echo = FALSE}
+ggplot(pairs_df_cts) + 
+  geom_histogram(aes(x = tumor_00cf_1), stat = "bin", bins = 200) + 
+  xlim(-5, 500) +
+  xlab("Raw expression counts") +
+  ylab("Number of genes")
+```
+
+x-axis means the intersected cell count, while y-axis is #genes associated with each count number.
+
+**Low number of counts** associated with a **large proportion of genes**, and a long right tail due to the **lack of any upper limit for expression**.
+
+## Choose statistical models
+To decide which statistical model will be used according to this situation, **poisson** or **negative binomial**. 
+
+If it's count data, it should fit the negative binomial, as discussed previously. However, it can be helpful to plot the mean versus the variance of your data. Remember for the Poisson model, *mean = variance*, but for NB, *mean < variance*.
+```{r statstical_models, echo=FALSE, warning=FALSE}
+mean_counts <- apply(pairs13_df_cts, 1, mean)
+var_counts <- apply(pairs13_df_cts, 1, var)
+
+mean_counts <- apply(pairs13_df_cts[, 1:13], 1, mean)
+variance_counts <- apply(pairs13_df_cts[, 1:13], 1, var)
+dfMeanVari <- data.frame(mean_counts, var_counts)
+
+ggplot(dfMeanVari) +
+        geom_point(aes(x=mean_counts, y=var_counts)) + 
+        geom_line(aes(x=mean_counts, y=mean_counts, color="red")) +
+        scale_y_log10() +
+        scale_x_log10() + 
+        ggtitle("mean versus variance")
+```
+
+Note that in the above figure, *the variance across replicates tends to be greater than the mean (red line), especially for genes with large mean expression levels.* This is a good indication that our data do not fit the Poisson distribution and we need to account for this increase in variance using the **Negative Binomial model** (i.e. Poisson will underestimate variability leading to an increase in false positive DE genes).
+
+## Sample-level QC
+To explore the similarity of our samples, we will be performing sample-level QC using **Principal Component Analysis (PCA)** and **hierarchical clustering** methods. 
+```{r QC_sampleLevel, echo=TRUE}
+### Transform counts for data visualization
+rld <- rlog(dds, blind=TRUE)
+PCA_object_1vs1 <- plotPCA(rld, intgroup = "sampleType", returnData = TRUE)
+
+pcaPlot <- ggplot(PCA_object_1vs1, aes(x=PC1, y=PC2, color=sampleType)) +
+  geom_point(size=3) +  # Plot the dots
+  geom_text(aes(label=name), vjust=1.5, hjust=1.5) +  # Add sample names
+  theme_minimal() +
+  labs(x="PC1", y="PC2", title="PCA Plot") +
+  theme(legend.position="bottom")
+pcaPlot
+
+# Input is a matrix of log transformed values
+rld_mat <- assay(rld)
+pca <- prcomp(t(rld_mat))
+
+# Create data frame with metadata and PC1 and PC2 values for input to ggplot
+df <- cbind(coldata, pca$x)
+ggplot(df) + geom_point(aes(x=PC1, y=PC2, color = sampleType))
+
+# hierarchical clustering
+### Compute pairwise correlation values
+rld_cor <- cor(rld_mat)    ## cor() is a base R function
+head(rld_cor)   ## check the output of cor(), make note of the rownames and colnames
+pheatmap(rld_cor)
+```
+
+## DeSeq analysis
+
+### pre-filtering
+```{r pre_filter, echo=TRUE}
+smallestGroupSize <- 3
+cut_off_value <- 10
+keep <- rowSums(counts(dds) >= cut_off_value) >= smallestGroupSize
+dds <- dds[keep,]
+```
+
+### Normalization
+The next step is to normalize the count data using **the median of ratios method** (**size factor**) in order to be able to *make fair gene comparisons between samples*. This is because some samples express less in each gene, compared to others, we have to normalize each sample expression level to compare and see which *genes are up/down regulated* between control and treatment group. Normalization is included in DESeq(). 
+
+**Shrinkage** of effect size (LFC estimates) is useful for **visualization and ranking of genes**, without the need for arbitrary filters on low count genes. 
+```{r deseq2+shrinken, echo=TRUE, warning=FALSE}
+# deseq2 model
+dds <- DESeq(dds)
+res <- results(dds)
+res
+sizeFactor <- sizeFactors(dds)
+sizeFactor
+
+# get result table
+levels(dds$sampleType) # check the reference level -- first argument 
+contrast_tissueOrigin <- c("sampleType","Tumor","Normal")
+res_tissueOrigin_unshrunken <- results(dds, contrast = contrast_tissueOrigin) # prior estimate of LFC
+res_tisOri_unshrunken_ordered <- res_tissueOrigin_unshrunken[order(res_tissueOrigin_unshrunken$pvalue),]
+summary(res_tisOri_unshrunken_ordered)
+
+# shrink
+resultsNames(dds)
+res_tissueOrigin <- lfcShrink(dds, res = res_tissueOrigin_unshrunken, coef = "sampleType_Tumor_vs_Normal", type="apeglm")
+
+# filter (p-adj < 0.05 & logfoldchange > 0.58)
+res_tissueOrigin_filtered <- subset(res_tissueOrigin, padj < 0.05 & ( log2FoldChange > 0.58 | log2FoldChange < -0.58))
+
+res_tissueOrigin_ordered <- res_tissueOrigin_filtered[order(res_tissueOrigin_filtered$log2FoldChange),]
+summary(res_tissueOrigin_ordered)
+```
+
+## Exploring and exporting results
+### MA-plot 
+This is a great way to illustrate the effect of LFC shrinkage, allowing us to evaluate the magnitude of fold changes and how they are distributed relative to mean expression.
+```{r MAplot, echo=TRUE}
+plotMA(res)
+plotMA(res_tissueOrigin)
+```
+
+### Results exploration
+```{r result_exploration, echo=FALSE}
+# class(res_tisOri_ordered)
+# mcols(res_tisOri_ordered, use.names = T) # to extract info regarding the meaning of the meaning of each column
+```
+
+
+### plot counts
+```{r plot_count, echo=TRUE}
+plotCounts(dds, gene = "HERV3_14q11.2", intgroup = "sampleType")
+```
+```{r export, echo=FALSE}
+# write.csv(as.data.frame(res_tissueOrigin_ordered), file = "sampleType_results_filterLFCandPadj.csv")
+# resTisOri_ordered_Sig <- subset(res_tissueOrigin_ordered, padj < 0.05)
+# write.csv(as.data.frame(resTisOri_ordered_Sig), file = "sampleType_Sig_results.csv")
+```
+
+```{r}
+# report <- DESeq2Report(dds, project = "DESeq2 HTML report", intgroup = c('sampleType'), outdir = 'DESeq2Exploration', output = 'index', theme = theme_bw())
+```
+## Deseq2 for one V.S. one comparison: I think this one to one comparison is highly unlikely to be worked out.
+### Using interactive term (doesn't work)
+```{r multipleFactor_addingPatient, echo=TRUE}
+# ddsMF <- dds
+# design(ddsMF) <- formula(~ patientGroup + sampleType)
+# ddsMF <- DESeq(ddsMF)
+# resMF <- results(ddsMF)
+# head(resMF)
+# write.csv("patientANDsampleType.csv")
+```
+### OR using a grouping variable (doesn't work)
+```{r group_var_oneVSone, echo=TRUE}
+# ddsMF <- dds
+# ddsMF$group <- factor(paste0(ddsMF$patientGroup, ddsMF$sampleType))
+# design(ddsMF) <- formula(~ group)
+# ddsMF <- DESeq(ddsMF)
+# resMF <- results(ddsMF)
+# resultsNames(ddsMF)
+```
+
+## Data quality assessment by sample clustering and visualization
+```{r volcano, echo=FALSE}
+## Volcano plot
+threshold_OE = res_tissueOrigin_filtered$padj < 0.05
+ggplot(res_tissueOrigin_filtered) +
+        geom_point(aes(x = log2FoldChange, y = -log10(padj), colour = threshold_OE)) +
+        geom_text_repel(aes(label = genelabels)) +
+        ggtitle("DE") +
+        xlab("log2 fold change") + 
+        ylab("-log10 adjusted p-value") +
+        #scale_y_continuous(limits = c(0,50)) +
+        theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(1.25)))  
+```
+
+```{r volcano, echo=false}
+# ## Volcano plot
+# res_tissueOrigin_f <- res_tissueOrigin %>% 
+#                   mutate(threshold_OE = padj < 0.05 & abs(log2FoldChange) >= 0.58)
+# 
+# # threshold_OE = res_tissueOrigin_filtered$padj < 0.05
+# ggplot(res_tissueOrigin_f) +
+#         geom_point(aes(x = log2FoldChange, y = -log10(padj), colour = threshold_OE)) +
+#         ggtitle("DE") +
+#         xlab("log2 fold change") + 
+#         ylab("-log10 adjusted p-value") +
+#         #scale_y_continuous(limits = c(0,50)) +
+#         theme(legend.position = "none",
+#               plot.title = element_text(size = rel(1.5), hjust = 0.5),
+#               axis.title = element_text(size = rel(1.25)))  
+```
