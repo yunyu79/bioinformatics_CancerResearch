@@ -28,8 +28,8 @@ normal_9cb3_5 = pd.read_csv(dir + "9cb3_normal_telescope-telescope_report.tsv", 
 tumor_1421_5 = pd.read_csv(dir + "1421_tumor_telescope-telescope_report.tsv", header = None, sep = "\t")
 
 # EAC, TCGA-V5-A7RE
-normal_7a90_6 = pd.read_csv(dir + "7a90_normal_telescope-telescope_report.tsv", header = None, sep = "\t")
-tumor_4225_6 = pd.read_csv(dir + "4225_tumor_telescope-telescope_report.tsv", header = None, sep = "\t")
+# remove -> normal_7a90_6 = pd.read_csv(dir + "7a90_normal_telescope-telescope_report.tsv", header = None, sep = "\t")
+# remove -> tumor_4225_6 = pd.read_csv(dir + "4225_tumor_telescope-telescope_report.tsv", header = None, sep = "\t")
 
 # EAC, TCGA-IC-A6RE
 tumor_6c97_7 = pd.read_csv(dir + "6c97_tumor_telescope-telescope_report.tsv", header = None, sep = "\t")
