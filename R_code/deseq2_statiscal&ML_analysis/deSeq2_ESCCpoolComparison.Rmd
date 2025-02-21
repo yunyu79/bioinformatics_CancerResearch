@@ -114,24 +114,29 @@ Note that in the above figure, *the variance across replicates tends to be great
 To explore the similarity of our samples, we will be performing sample-level QC using **Principal Component Analysis (PCA)** and **hierarchical clustering** methods. 
 ```{r QC_sampleLevel, echo=TRUE}
 ### Transform counts for data visualization
-rld <- varianceStabilizingTransformation(dds, blind=TRUE)
-PCA_object_1vs1 <- plotPCA(rld, intgroup = "sampleType", returnData = TRUE)
+rld <- vst(dds, blind=TRUE)
+PCA_object <- plotPCA(rld, intgroup = "sampleType", returnData = TRUE)
 
-pcaPlot <- ggplot(PCA_object_1vs1, aes(x=PC1, y=PC2, color=sampleType)) +
-  geom_point(size=3) +  # Plot the dots
-#   geom_text(aes(label=name), vjust=1.5, hjust=1.5) +  # Add sample names
+# Set the plot pane size in RStudio (width x height in inches)
+options(repr.plot.width = 3, repr.plot.height = 2)
+
+# PC1 VS PC2
+pcaplot <- ggplot(PCA_object, aes(x=PC1, y=PC2, color = sampleType)) + 
+  geom_point(aes(color = sampleType), size=2) +
+  geom_text(aes(label=name), vjust=0, hjust=0, size=2.5) +  # Add sample names
   theme_minimal() +
   labs(x="PC1", y="PC2", title="PCA Plot") +
-  theme(legend.position="bottom")
-pcaPlot
+  theme(legend.position="right")
+pcaplot
 
 # Input is a matrix of log transformed values
 rld_mat <- assay(rld)
 pca <- prcomp(t(rld_mat))
 
-# Create data frame with metadata and PC1 and PC2 values for input to ggplot
+# PC3 vs PC4, Create data frame with metadata and PC3 and PC4 values for input to ggplot
 df <- cbind(coldata, pca$x)
-ggplot(df) + geom_point(aes(x=PC1, y=PC2, color = sampleType))
+ggplot(df) + geom_point(aes(x=PC3, y=PC4, color = sampleType))
+
 
 # hierarchical clustering
 ### Compute pairwise correlation values

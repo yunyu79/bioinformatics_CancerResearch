@@ -262,6 +262,7 @@ ggplot(res_tissueOrigin_tb, aes(x = log2FoldChange, y = -log10(padj))) +
         geom_point(aes(colour = threshold_OE)) +
         geom_text_repel(data = res_tissueOrigin_tb %>% arrange(log2FoldChange) %>% slice_head(n = 5), aes(label = genelabels)) +
         geom_text_repel(data = res_tissueOrigin_tb %>% slice_tail(n = 5), aes(label = gene)) +
+        scale_color_manual(values = c("TRUE" = "red", "NA" = "gray")) +
         ggtitle("DE") +
         xlab("log2 fold change") + 
         ylab("-log10 adjusted p-value") +
