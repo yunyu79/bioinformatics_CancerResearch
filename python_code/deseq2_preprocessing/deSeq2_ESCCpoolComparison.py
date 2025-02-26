@@ -5,14 +5,14 @@ import os
 
 #%%
 
-dir_EAC_allTumor = "/Users/yongxin/Documents/Research/HPC/deSeq2/Rworkstation/6_telescope_EAC_tumor"
-dir_EAC_allNormal = "/Users/yongxin/Documents/Research/HPC/deSeq2/Rworkstation/6_telescope_EAC_normal"
+dir_ESCC_allTumor = "/Users/yongxin/Documents/Research/HPC/deSeq2/Rworkstation/6_telescope_ESCC_tumor"
+dir_ESCC_allNormal = "/Users/yongxin/Documents/Research/HPC/deSeq2/Rworkstation/6_telescope_ESCC_normal"
 dataframes = {} # create a dictionary to store each sample's result as a dataframe (an element)
 
-for filename in os.listdir(dir_EAC_allTumor):
+for filename in os.listdir(dir_ESCC_allTumor):
     if filename.endswith(".tsv"):
         prefix = os.path.splitext(filename)[0]
-        filepath = os.path.join(dir_EAC_allTumor,filename)
+        filepath = os.path.join(dir_ESCC_allTumor,filename)
         
         df = pd.read_csv(filepath, header = None, sep = "\t",  encoding="utf-8")
 
@@ -28,12 +28,12 @@ for filename in os.listdir(dir_EAC_allTumor):
         dataframes["tumor_"+prefix] = df  # add a new element to dictionary
 
 print(dataframes.keys())
-print(dataframes['tumor_1421_telescope'])
+print(dataframes['tumor_2f76_telescope'])
 
-for filename in os.listdir(dir_EAC_allNormal):
+for filename in os.listdir(dir_ESCC_allNormal):
     if filename.endswith(".tsv"):
         prefix = os.path.splitext(filename)[0]
-        filepath = os.path.join(dir_EAC_allNormal,filename)
+        filepath = os.path.join(dir_ESCC_allNormal,filename)
         
         df = pd.read_csv(filepath, header = None, sep = "\t",  encoding="utf-8")
 
@@ -77,9 +77,9 @@ merged_df.dropna(axis= 0, how = 'all', subset = merged_df.columns[1:], inplace= 
 
 # N/A --> 0 & output
 merged_df.fillna(0, inplace = True)
-merged_df.to_csv("countData_EAC_pool.csv", index = False)
+merged_df.to_csv("countData_ESCC_pool.csv", index = False)
 
 # filtered_df = merged_df[merged_df.iloc[:,1:].sum(axis=1)>10]
-# filtered_df.to_csv("finalCounts_pool_filted.csv", index = False)
+# filtered_df.to_csv("finalCounts_pool_.csv", index = False)
 
 # %%
