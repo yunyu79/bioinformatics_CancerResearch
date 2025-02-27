@@ -1,0 +1,292 @@
+---
+title: "allSamples_poolComparison_deSeq2"
+output: html_document
+date: "2025-02-26"
+---
+
+## load library
+```{r load_library, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(RColorBrewer)
+library(pheatmap)
+library(readr)
+library(DESeq2)
+library(rmarkdown)
+library(regionReport)
+library(ggplot2)
+library(pheatmap)
+library(ggrepel)
+library(performanceEstimation)
+```
+
+## Construct DESeqDataSet object
+```{r createDDS13pairs_object, echo=TRUE}
+# count matrix
+pool_df <- read.csv("/Users/yongxin/Documents/Research/HPC/deSeq2/PythonWorkstation/countData_allSamples.csv", row.names = "transcript")
+pool_df_cts <- as.matrix(pool_df) 
+
+# sample information for tumor/normal
+coldata_EAC_tumor_89 <- rep(c('Tumor'), each = 89)
+coldata_EAC_normal9 <- c('Normal', 'Normal', 'Normal', 'Normal', 'Normal', 'Normal',
+                  'Normal', 'Normal', 'Normal')
+coldata_ESCC_tumor_95 <- rep(c('Tumor'), each = 95)
+coldata_ESCC_normal3 <- c('Normal','Normal','Normal')
+
+# sample information for sampleType
+coldata_EAC_98 <- rep(c('EAC'), each = 98)
+coldata_ESCC_98 <- rep(c('ESCC'), each = 98)
+
+coldata <- data.frame(sampleType = c(coldata_EAC_tumor_89, coldata_EAC_normal9, 
+                                            coldata_ESCC_tumor_95, coldata_ESCC_normal3),
+                             diagnosis = c(coldata_EAC_98, coldata_ESCC_98))
+
+
+rowname_EAC <- c('EAC_tumor_393c_telescope', 'EAC_tumor_5acb_telescope', 'EAC_tumor_e0cf_telescope', 'EAC_tumor_2f8e_telescope', 'EAC_tumor_e6c7_telescope', 'EAC_tumor_6513_telescope', 'EAC_tumor_301d_telescope', 'EAC_tumor_b1fc_telescope', 'EAC_tumor_6259_telescope', 'EAC_tumor_b4c0_telescope', 'EAC_tumor_50c2_telescope', 'EAC_tumor_1421_telescope', 'EAC_tumor_5739_telescope', 'EAC_tumor_827a_telescope', 'EAC_tumor_335f_telescope', 'EAC_tumor_0910_telescope', 'EAC_tumor_cc0f_telescope', 'EAC_tumor_93d8_telescope', 'EAC_tumor_c3c9_telescope', 'EAC_tumor_8bbf_telescope', 'EAC_tumor_523c_telescope', 'EAC_tumor_d67d_telescope', 'EAC_tumor_1804_telescope', 'EAC_tumor_4225_telescope', 'EAC_tumor_90fb_telescope', 'EAC_tumor_6284_telescope', 'EAC_tumor_50d5_telescope', 'EAC_tumor_a3e1_telescope', 'EAC_tumor_97de_telescope', 'EAC_tumor_d32a_telescope', 'EAC_tumor_85e5_telescope', 'EAC_tumor_f91b_telescope', 'EAC_tumor_26fa_telescope', 'EAC_tumor_2d15_telescope', 'EAC_tumor_c391_telescope', 'EAC_tumor_12ba_telescope', 'EAC_tumor_1a38_telescope', 'EAC_tumor_f52c_telescope', 'EAC_tumor_b336_telescope', 'EAC_tumor_8eaf_telescope', 'EAC_tumor_5a4d_telescope', 'EAC_tumor_fc9b_telescope', 'EAC_tumor_e012_telescope', 'EAC_tumor_e908_telescope', 'EAC_tumor_7acc_telescope', 'EAC_tumor_e9bb_telescope', 'EAC_tumor_349a_telescope', 'EAC_tumor_fb77_telescope', 'EAC_tumor_c7bd_telescope', 'EAC_tumor_db56_telescope', 'EAC_tumor_4876_telescope', 'EAC_tumor_38f8_telescope', 'EAC_tumor_d6b6_telescope', 'EAC_tumor_0ceb_telescope', 'EAC_tumor_6c97_telescope', 'EAC_tumor_dc4f_telescope', 'EAC_tumor_19ab_telescope', 'EAC_tumor_3ee2_telescope', 'EAC_tumor_963f_telescope', 'EAC_tumor_20f5_telescope', 'EAC_tumor_8003_telescope', 'EAC_tumor_da65_telescope', 'EAC_tumor_5d5d_telescope', 'EAC_tumor_5f00_telescope', 'EAC_tumor_9d10_telescope', 'EAC_tumor_375b_telescope', 'EAC_tumor_92c7_telescope', 'EAC_tumor_d2f9_telescope', 'EAC_tumor_8f3c_telescope', 'EAC_tumor_c277_telescope', 'EAC_tumor_9a56_telescope', 'EAC_tumor_0166_telescope', 'EAC_tumor_dc69_telescope', 'EAC_tumor_2ce8_telescope', 'EAC_tumor_c4bd_telescope', 'EAC_tumor_bdb3_telescope', 'EAC_tumor_43e6_telescope', 'EAC_tumor_b9d0_telescope', 'EAC_tumor_7f3d_telescope', 'EAC_tumor_90fc_telescope', 'EAC_tumor_2596_telescope', 'EAC_tumor_52c2_telescope', 'EAC_tumor_5608_telescope', 'EAC_tumor_6468_telescope', 'EAC_tumor_c573_telescope', 'EAC_tumor_64df_telescope', 'EAC_tumor_a160_telescope', 'EAC_tumor_9511_telescope', 'EAC_tumor_734d_telescope', 'EAC_normal_caf4_telescope', 'EAC_normal_62b6_telescope', 'EAC_normal_8ec0_telescope', 'EAC_normal_9cb3_telescope', 'EAC_normal_3562_telescope', 'EAC_normal_63d3_telescope', 'EAC_normal_e84e_telescope', 'EAC_normal_6d67_telescope', 'EAC_normal_ba94_telescope')
+                           
+rowname_ESCC <- c('ESCC_tumor_a7ba_telescope', 'ESCC_tumor_4757_telescope', 'ESCC_tumor_2aa1_telescope', 'ESCC_tumor_9816_telescope', 'ESCC_tumor_2655_telescope', 'ESCC_tumor_91ef_telescope', 'ESCC_tumor_0dac_telescope', 'ESCC_tumor_cc1b_telescope', 'ESCC_tumor_17a8_telescope', 'ESCC_tumor_871c_telescope', 'ESCC_tumor_12e4_telescope', 'ESCC_tumor_27fe_telescope', 'ESCC_tumor_351f_telescope', 'ESCC_tumor_3bda_telescope', 'ESCC_tumor_9eaa_telescope', 'ESCC_tumor_5703_telescope', 'ESCC_tumor_6871_telescope', 'ESCC_tumor_dac8_telescope', 'ESCC_tumor_6091_telescope', 'ESCC_tumor_99da_telescope', 'ESCC_tumor_190f_telescope', 'ESCC_tumor_1ae9_telescope', 'ESCC_tumor_2ed3_telescope', 'ESCC_tumor_708c_telescope', 'ESCC_tumor_2a0e_telescope', 'ESCC_tumor_05b9_telescope', 'ESCC_tumor_cb8f_telescope', 'ESCC_tumor_8998_telescope', 'ESCC_tumor_9314_telescope', 'ESCC_tumor_55ee_telescope', 'ESCC_tumor_0934_telescope', 'ESCC_tumor_2e7d_telescope', 'ESCC_tumor_43df_telescope', 'ESCC_tumor_32ac_telescope', 'ESCC_tumor_8284_telescope', 'ESCC_tumor_61d3_telescope', 'ESCC_tumor_1869_telescope', 'ESCC_tumor_1e7f_telescope', 'ESCC_tumor_13b7_telescope', 'ESCC_tumor_4143_telescope', 'ESCC_tumor_40ac_telescope', 'ESCC_tumor_7c08_telescope', 'ESCC_tumor_a453_telescope', 'ESCC_tumor_ebab_telescope', 'ESCC_tumor_e4ea_telescope', 'ESCC_tumor_5901_telescope', 'ESCC_tumor_d62f_telescope', 'ESCC_tumor_b549_telescope', 'ESCC_tumor_efee_telescope', 'ESCC_tumor_eec2_telescope', 'ESCC_tumor_f82c_telescope', 'ESCC_tumor_3f7c_telescope', 'ESCC_tumor_e7e1_telescope', 'ESCC_tumor_94c3_telescope', 'ESCC_tumor_65db_telescope', 'ESCC_tumor_2f76_telescope', 'ESCC_tumor_00d3_telescope', 'ESCC_tumor_98bd_telescope', 'ESCC_tumor_2221_telescope', 'ESCC_tumor_05fd_telescope', 'ESCC_tumor_ec23_telescope', 'ESCC_tumor_741d_telescope', 'ESCC_tumor_eae9_telescope', 'ESCC_tumor_293f_telescope', 'ESCC_tumor_06de_telescope', 'ESCC_tumor_cf39_telescope', 'ESCC_tumor_0ccf_telescope', 'ESCC_tumor_b37b_telescope', 'ESCC_tumor_023b_telescope', 'ESCC_tumor_053a_telescope', 'ESCC_tumor_21f5_telescope', 'ESCC_tumor_3674_telescope', 'ESCC_tumor_de4f_telescope', 'ESCC_tumor_1bc7_telescope', 'ESCC_tumor_4fc2_telescope', 'ESCC_tumor_2ca5_telescope', 'ESCC_tumor_936c_telescope', 'ESCC_tumor_d760_telescope', 'ESCC_tumor_fe1c_telescope', 'ESCC_tumor_d49d_telescope', 'ESCC_tumor_56de_telescope', 'ESCC_tumor_1454_telescope', 'ESCC_tumor_1cee_telescope', 'ESCC_tumor_8d3b_telescope', 'ESCC_tumor_84c4_telescope', 'ESCC_tumor_807b_telescope', 'ESCC_tumor_7c87_telescope', 'ESCC_tumor_acc2_telescope', 'ESCC_tumor_a604_telescope', 'ESCC_tumor_6084_telescope', 'ESCC_tumor_2b29_telescope', 'ESCC_tumor_a59c_telescope', 'ESCC_tumor_7ba2_telescope', 'ESCC_tumor_c36e_telescope', 'ESCC_tumor_4e88_telescope', 'ESCC_normal_a3ba_telescope', 'ESCC_normal_b855_telescope', 'ESCC_normal_9281_telescope')
+
+rownames(coldata) <- c(rowname_EAC, rowname_ESCC)
+
+
+coldata$sampleType <- factor(coldata$sampleType)
+
+
+# construct a DESeqDataSet with the count matrix and the sample information
+dds <- DESeqDataSetFromMatrix(countData = pool_df_cts,
+                              colData = coldata,
+                              design = ~ sampleType + diagnosis + sampleType:diagnosis)
+print(dds)
+all(colnames(pool_df_cts) == rownames(coldata))
+```
+
+
+## RNA-counts distribution
+```{r count_dist, echo = FALSE}
+ggplot(EACpool_df_cts) + 
+  geom_histogram(aes(x = EAC_tumor_393c_telescope), stat = "bin", bins = 200) + 
+  xlim(-5, 300) +
+  xlab("Raw expression counts") +
+  ylab("Number of genes")
+```
+
+x-axis means the intersected cell count, while y-axis is #genes associated with each count number.
+
+**Low number of counts** associated with a **large proportion of genes**, and a long right tail due to the **lack of any upper limit for expression**.
+
+## Choose statistical models
+To decide which statistical model will be used according to this situation, **poisson** or **negative binomial**. 
+
+If it's count data, it should fit the negative binomial, as discussed previously. However, it can be helpful to plot the mean versus the variance of your data. Remember for the Poisson model, *mean = variance*, but for NB, *mean < variance*.
+```{r statstical_models, echo=FALSE, warning=FALSE}
+mean_counts <- apply(pool_df_cts[, 1:98], 1, mean)
+var_counts <- apply(pool_df_cts[, 1:98], 1, var)
+dfMeanVari <- data.frame(mean_counts, var_counts)
+
+ggplot(dfMeanVari) +
+        geom_point(aes(x=mean_counts, y=var_counts)) + 
+        geom_line(aes(x=mean_counts, y=mean_counts, color="red")) +
+        scale_y_log10() +
+        scale_x_log10() + 
+        ggtitle("mean versus variance")
+```
+
+Note that in the above figure, *the variance across replicates tends to be greater than the mean (red line), especially for genes with large mean expression levels.* This is a good indication that our data do not fit the Poisson distribution and we need to account for this increase in variance using the **Negative Binomial model** (i.e. Poisson will underestimate variability leading to an increase in false positive DE genes).
+
+
+## pre-filtering
+```{r pre_filter, echo=TRUE}
+smallestGroupSize <- 9
+cut_off_value <- 10
+keep <- rowSums(counts(dds) >= cut_off_value) >= smallestGroupSize
+dds <- dds[keep,]
+```
+
+## Sample-level Quality assurance and Quality Control
+Data quality assessment and quality control (i.e. the removal of insufficiently good data) are essential steps of any data analysis. Performing sample-level QC can also identify any sample outliers, which may need to be explored further to determine whether they need to be removed prior to DE analysis.
+
+To explore the similarity of our samples, we will be performing sample-level QC using **Principal Component Analysis (PCA)** and **hierarchical clustering** methods. 
+
+### Data Transformation & Visualizations
+When using unsupervised clustering methods, log2-transformation of the normalized counts improves the distances/clustering for visualization. DESeq2 uses a regularized log transform (rlog) of the normalized counts for sample-level QC as it moderates the variance across the mean, improving the clustering. While rlog is slow when dealing with large amount of samples, ***vst*** is a good alternatives to perform similar job.
+
+Both of them has transformed data(pseudocounts) on the *log2 scale** which has been *normalized* with respect to library size or other normalization factors. 𝑦=log2(𝑛+𝑛0)
+
+#### Principal Component Analysis (PCA)
+```{r QC_sampleLevel, echo=TRUE}
+### Transform counts for variance stabilizing
+vsd_EAC <- vst(dds, blind=TRUE) # variance stabilizing transformations, an alternative to regularized logarithm (rlog). Using "blind" parameter is good for quality assurance/assessment (QA). While it's not an appropriate option if one wishes to transform the data for downstream analysis. In this case, we should set it to FALSE (default setting). By setting blind = TRUE, it compares samples in an unbiased manner about experimental groups andwill re-estimate the dispersions. After tranformation, standard deviation of the transformed data, across samples, against the mean is roughly constant. 
+
+# PC1 vs PC2
+PCA_object <- plotPCA(vsd_EAC, intgroup = c("sampleType", "diagnosis"), ntop = 500, returnData = TRUE) # use the most variable 1000 genes by setting 'ntop'
+
+pcaPlot <- ggplot(PCA_object, aes(x=PC1, y=PC2, color=sampleType, shape = diagnosis)) +
+  geom_point(size=3) +  # Plot the dots
+#   geom_text(aes(label=name), vjust=1.5, hjust=1.5) +  # Add sample names
+  theme_minimal() +
+  labs(x="PC1", y="PC2", title="PC1 vs PC2 for all samples") +
+  theme(legend.position="right")
+pcaPlot
+
+# PC3 vs PC4
+rld_mat <- assay(vsd_EAC) # assay() is used to extract the matrix of normalized values.
+pca <- prcomp(t(rld_mat)) # The plotPCA() function above will only return the values for PC1 and PC2. If further exploration needed, we can use 'prcomp' (principal component) function to plot any of the PCs.
+
+# Create data frame with metadata and PC1 and PC2 values for input to ggplot
+df <- cbind(coldata, pca$x) # column binded, like "merge()" in python. 'pca$x'--> is the data set projected on the principal components
+ggplot(df) + geom_point(aes(x=PC3, y=PC4, color = sampleType, shape = diagnosis)) + ggtitle("PC3 vs PC4 for all Samples")
+```
+
+### Hierarchical Clustering Heatmap
+```{r hierarchical clustering, echo=TRUE}
+# hierarchical clustering
+### Compute pairwise correlation values
+rld_corr <- cor(rld_mat)    ## cor() is a base R function
+head(rld_corr)   ## check the output of cor(), make note of the rownames and colnames
+pheatmap(rld_corr, fontsize_row = 5)
+```
+
+## DeSeq analysis
+
+### Normalization
+The next step is to normalize the count data using **the median of ratios method** (**size factor**) in order to be able to *make fair gene comparisons between samples*. This is because some samples express less in each gene, compared to others, we have to normalize each sample expression level to compare and see which *genes are up/down regulated* between control and treatment group. Normalization is included in DESeq(). 
+
+**Shrinkage** of effect size (LFC estimates) is useful for **visualization and ranking of genes**, without the need for arbitrary filters on low count genes. 
+```{r deseq2+shrinken, echo=TRUE, warning=FALSE}
+# deseq2 model
+dds <- DESeq(dds) # estimate sizefactor, dispersion; and apply negative binomial Wald test
+res <- results(dds)
+res
+sizeFactor <- sizeFactors(dds)
+sizeFactor
+
+# get result table
+levels(dds$sampleType) # check the reference level -- first argument 
+contrast_tissueOrigin <- c("sampleType","Tumor","Normal")
+res_tissueOrigin_unshrunken <- results(dds, contrast = contrast_tissueOrigin) # prior estimate of LFC
+res_tisOri_unshrunken_ordered <- res_tissueOrigin_unshrunken[order(res_tissueOrigin_unshrunken$pvalue),]
+summary(res_tisOri_unshrunken_ordered)
+
+# shrink
+resultsNames(dds)
+res_tissueOrigin <- lfcShrink(dds, res = res_tissueOrigin_unshrunken, coef = "sampleType_Tumor_vs_Normal", type="apeglm")
+
+# filter (p-adj < 0.05 & logfoldchange > 0.58)
+res_tissueOrigin_filtered <- subset(res_tissueOrigin, padj < 0.05 & ( log2FoldChange > 0.58 | log2FoldChange < -0.58))
+
+res_tissueOrigin_ordered <- res_tissueOrigin_filtered[order(res_tissueOrigin_filtered$log2FoldChange),]
+summary(res_tissueOrigin_ordered)
+```
+
+## Exploring and exporting results
+### MA-plot 
+This is a great way to illustrate the effect of LFC shrinkage, allowing us to evaluate the magnitude of fold changes and how they are distributed relative to mean expression.
+```{r MAplot, echo=TRUE}
+plotMA(res)
+plotMA(res_tissueOrigin)
+```
+
+### Results exploration
+```{r result_exploration, echo=FALSE}
+# class(res_tisOri_ordered)
+# mcols(res_tisOri_ordered, use.names = T) # to extract info regarding the meaning of the meaning of each column
+```
+
+
+### plot counts
+```{r plot_count, echo=TRUE}
+plotCounts(dds, gene = "HERV3_14q11.2", intgroup = "sampleType")
+```
+```{r export, echo=FALSE}
+# write.csv(as.data.frame(res_tissueOrigin_ordered), file = "sampleType_results_filterLFCandPadj.csv")
+# resTisOri_ordered_Sig <- subset(res_tissueOrigin_ordered, padj < 0.05)
+# write.csv(as.data.frame(resTisOri_ordered_Sig), file = "sampleType_Sig_results.csv")
+```
+
+```{r}
+# report <- DESeq2Report(dds, project = "DESeq2 HTML report", intgroup = c('sampleType'), outdir = 'DESeq2Exploration', output = 'index', theme = theme_bw())
+```
+## Deseq2 for one V.S. one comparison: I think this one to one comparison is highly unlikely to be worked out.
+### Using interactive term (doesn't work)
+```{r multipleFactor_addingPatient, echo=TRUE}
+# ddsMF <- dds
+# design(ddsMF) <- formula(~ patientGroup + sampleType)
+# ddsMF <- DESeq(ddsMF)
+# resMF <- results(ddsMF)
+# head(resMF)
+# write.csv("patientANDsampleType.csv")
+```
+### OR using a grouping variable (doesn't work)
+```{r group_var_oneVSone, echo=TRUE}
+# ddsMF <- dds
+# ddsMF$group <- factor(paste0(ddsMF$patientGroup, ddsMF$sampleType))
+# design(ddsMF) <- formula(~ group)
+# ddsMF <- DESeq(ddsMF)
+# resMF <- results(ddsMF)
+# resultsNames(ddsMF)
+```
+
+## Data quality assessment by sample clustering and visualization
+```{r volcano, echo=FALSE}
+## Volcano plot
+
+# 
+res_tissueOrigin_tb <- res_tissueOrigin %>%
+  data.frame() %>%
+  rownames_to_column(var="gene") %>% 
+  as_tibble()
+
+# padj.cutoff <- 0.05
+# lfc.cutoff <- 0.58
+# sigOE <- res_tissueOrigin_tb %>%
+#         filter(padj < padj.cutoff & abs(log2FoldChange) > lfc.cutoff)
+
+res_tissueOrigin_tb <- res_tissueOrigin_tb %>% 
+                  mutate(threshold_OE = padj < 0.05 & abs(log2FoldChange) >= 0.58)
+
+res_tissueOrigin_tb <- res_tissueOrigin_tb %>% arrange(log2FoldChange) %>% mutate(genelabels = "")
+res_tissueOrigin_tb$genelabels[1:98] <- res_tissueOrigin_tb$gene[1:98]
+
+
+## Volcano plot
+threshold_padj = res_tissueOrigin_tb$padj < 0.05
+threshold_lfc = res_tissueOrigin_tb$log2FoldChange > 0.58 | res_tissueOrigin_tb$log2FoldChange < -0.58
+
+
+ggplot(res_tissueOrigin_tb, aes(x = log2FoldChange, y = -log10(padj))) +
+        geom_point(aes(colour = threshold_OE)) +
+        geom_text_repel(data = res_tissueOrigin_tb %>% arrange(log2FoldChange) %>% slice_head(n = 5), aes(label = genelabels)) + # Adds text labels to a plot while avoiding overlaps between labels. If labels are few, 'geom_text()' would be good
+        geom_text_repel(data = res_tissueOrigin_tb %>% slice_tail(n = 5), aes(label = gene)) +
+        scale_color_manual(values = c("TRUE" = "red", "NA" = "gray")) +
+        ggtitle("DE") +
+        xlab("log2 fold change") + 
+        ylab("-log10 adjusted p-value") +
+        theme(legend.position = "none",
+              plot.title = element_text(size = rel(1.5), hjust = 0.5),
+              axis.title = element_text(size = rel(1.25))) 
+```
+
+```{r heatmap_genes_samples, echo=True}
+# heatmap
+top_var_genes = head(order(rowVars(rld_mat), decreasing = TRUE), 100)
+
+lfc6_genes <- rownames(res_tissueOrigin)[which(abs(res_tissueOrigin$log2FoldChange) > 6 & res_tissueOrigin$padj < 0.05)]
+
+rld_mat_filtered = rld_mat[lfc6_genes, ]
+
+# df <- as.data.frame(coldata(dds)[,c("condition","type")])
+
+pheatmap(rld_mat_filtered,
+         scale = "row",  # Standardize rows (genes) to compare expression patterns
+         fontsize_row = 5, 
+         # cluster_rows = TRUE,
+         # annotation_col = sampleType, 
+         clustering_distance_rows = "correlation", 
+         clustering_distance_cols = "correlation", 
+         show_rownames = TRUE,  # Set to TRUE if you want to display gene names
+         main = "Heatmap of Gene Expression Across EAC Samples")
+```
+
+
+
+
